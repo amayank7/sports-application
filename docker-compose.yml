@@ -1,0 +1,48 @@
+version: '3'
+services:
+  db:
+    image: mysql:8
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysecretpassword
+      - MYSQL_DATABASE=mydb
+      - MYSQL_USER=myuser
+      - MYSQL_PASSWORD=mypassword
+    volumes:
+      - ./src/migration/base.sql:/docker-entrypoint-initdb.d/base.sql
+    networks:
+      - my-network
+    healthcheck:
+          test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+          timeout: 15s
+          retries: 10
+  app:
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=development
+    networks:
+      - my-network
+
+  news-app:
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 3001:3001
+    build: news-service
+    networks:
+      - my-network
+
+
+networks:
+  my-network:
+
+volumes:
+  db-data:
